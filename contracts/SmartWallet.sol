@@ -21,16 +21,19 @@ contract SmartWallet is IERC165, IERC721Receiver, IERC1155Receiver, IERC1271 {
     error InvalidNewOwner();
     error AccessDenied();
     error GuardProtection();
+    error FunctionNotImplemented(address sender, bytes4 selector, bytes data);
 
     event Executed(address indexed target, uint256 value, bytes data);
     event ExecutedFromModule(address indexed module, address indexed target, uint256 value, bytes data);
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
     event ModuleAdded(address indexed module);
     event ModuleRemoved(address indexed module);
+    event NativeReceived(address indexed from, uint256 value);
     event ERC721Received(address indexed operator, address indexed from, uint256 tokenId);
     event ERC1155Received(address indexed operator, address indexed from, uint256 id, uint256 value);
     event ERC1155BatchReceived(address indexed operator, address indexed from, uint256[] ids, uint256[] values);
-    event WalletUpgraded(address indexed oldImplementation, address indexed newImplementation);
+    event WalletUpgraded(address indexed newImplementation);
+    event GuardianChanged(address indexed guardian);
 
     modifier onlySelf() {
         if (msg.sender != address(this)) revert AccessDenied();
@@ -61,7 +64,7 @@ contract SmartWallet is IERC165, IERC721Receiver, IERC1155Receiver, IERC1271 {
             emit ModuleAdded(_modules[i]);
         }
 
-        emit WalletUpgraded(address(0), implementation);
+        emit WalletUpgraded(implementation);
     }
 
     function executeFromModule(
@@ -119,6 +122,12 @@ contract SmartWallet is IERC165, IERC721Receiver, IERC1155Receiver, IERC1271 {
 
     function upgrade(address newImplementation) external onlySelf {
         implementation = newImplementation;
+        emit WalletUpgraded(newImplementation);
+    }
+
+    function changeGuardian(address _guardian) external onlySelf {
+        guardian = _guardian;
+        emit GuardianChanged(_guardian);
     }
 
     function addModule(address module) external onlySelf {
@@ -198,5 +207,13 @@ contract SmartWallet is IERC165, IERC721Receiver, IERC1155Receiver, IERC1271 {
         address signer = ecrecover(hash, v, r, s);
         if (signer == address(0)) revert InvalidSignature();
         return signer;
+    }
+
+    fallback() external {
+        revert FunctionNotImplemented(msg.sender, msg.sig, msg.data);
+    }
+
+    receive() external payable {
+        emit NativeReceived(msg.sender, msg.value);
     }
 }

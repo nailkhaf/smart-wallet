@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "../BaseWallet.sol";
+import "../SmartWallet.sol";
 
 contract SimpleRecoveryModule is Ownable {
     struct Recovery {
@@ -26,7 +26,7 @@ contract SimpleRecoveryModule is Ownable {
         recoveryTime = _recoveryTime;
     }
 
-    function startRecovery(address wallet, address newOwner) external onlyOwner {
+    function startRecovery(address payable wallet, address newOwner) external onlyOwner {
         if (!SmartWallet(wallet).modules(address(this))) revert ModuleNotInstalled(wallet);
         if (newOwner == owner()) revert InvalidNewOwner(wallet);
 
@@ -46,7 +46,7 @@ contract SimpleRecoveryModule is Ownable {
         emit RecoveryCanceled(msg.sender);
     }
 
-    function finishRecovery(address wallet) external onlyOwner {
+    function finishRecovery(address payable wallet) external onlyOwner {
         uint256 recoveryStartedAt = recoveries[wallet].recoveryStartedAt;
         if (recoveryStartedAt == 0) revert RecoveryNotStarted();
         if (block.timestamp - recoveryStartedAt < recoveryTime) revert RecoveryTimeNotPassed();

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/metatx/ERC2771Context.sol";
-import "../BaseWallet.sol";
+import "../SmartWallet.sol";
 
 contract TrustedForwarderModule is ERC2771Context {
 
@@ -14,7 +14,7 @@ contract TrustedForwarderModule is ERC2771Context {
     }
 
     function forward(
-        address wallet,
+        address payable wallet,
         address target,
         uint256 value,
         bytes calldata data

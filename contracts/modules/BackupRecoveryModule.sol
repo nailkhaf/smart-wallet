@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "../BaseWallet.sol";
+import "../SmartWallet.sol";
 
 contract BackupRecoveryModule {
     struct Recovery {
@@ -34,11 +34,11 @@ contract BackupRecoveryModule {
     }
 
     function registerBackup(address backup) external {
-        if (!SmartWallet(msg.sender).modules(address(this))) revert ModuleNotInstalled(msg.sender);
+        if (!SmartWallet(payable(msg.sender)).modules(address(this))) revert ModuleNotInstalled(msg.sender);
         backups[msg.sender] = backup;
     }
 
-    function startRecovery(address wallet, address newOwner) external onlyBackup(wallet) {
+    function startRecovery(address payable wallet, address newOwner) external onlyBackup(wallet) {
         if (!SmartWallet(wallet).modules(address(this))) revert ModuleNotInstalled(wallet);
         if (newOwner == backups[wallet]) revert InvalidNewOwner(wallet);
 
@@ -58,7 +58,7 @@ contract BackupRecoveryModule {
         emit RecoveryCanceled(msg.sender);
     }
 
-    function finishRecovery(address wallet) external onlyBackup(wallet) {
+    function finishRecovery(address payable wallet) external onlyBackup(wallet) {
         uint256 recoveryStartedAt = recoveries[wallet].recoveryStartedAt;
         if (recoveryStartedAt == 0) revert RecoveryNotStarted();
         if (block.timestamp - recoveryStartedAt < recoveryTime) revert RecoveryTimeNotPassed();
