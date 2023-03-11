@@ -5,11 +5,14 @@ import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 import "@openzeppelin/contracts/interfaces/IERC1271.sol";
+import "@openzeppelin/contracts/utils/StorageSlot.sol";
 import "./interfaces/IGuardian.sol";
+
 
 contract SmartWallet is IERC165, IERC721Receiver, IERC1155Receiver, IERC1271 {
 
-    address public implementation;
+    bytes32 internal constant _IMPLEMENTATION_SLOT = 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
+
     address public owner;
     address public guardian;
     mapping(address => bool) public modules;
@@ -25,14 +28,14 @@ contract SmartWallet is IERC165, IERC721Receiver, IERC1155Receiver, IERC1271 {
 
     event Executed(address indexed target, uint256 value, bytes data);
     event ExecutedFromModule(address indexed module, address indexed target, uint256 value, bytes data);
-    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+    event OwnershipTransferred(address indexed owner);
     event ModuleAdded(address indexed module);
     event ModuleRemoved(address indexed module);
     event NativeReceived(address indexed from, uint256 value);
-    event ERC721Received(address indexed operator, address indexed from, uint256 tokenId);
-    event ERC1155Received(address indexed operator, address indexed from, uint256 id, uint256 value);
-    event ERC1155BatchReceived(address indexed operator, address indexed from, uint256[] ids, uint256[] values);
-    event WalletUpgraded(address indexed newImplementation);
+    event ERC721Received(address indexed token, address indexed from, uint256 tokenId);
+    event ERC1155Received(address indexed token, address indexed from, uint256 id, uint256 value);
+    event ERC1155BatchReceived(address indexed token, address indexed from, uint256[] ids, uint256[] values);
+    event WalletUpgraded(address indexed implementation);
     event GuardianChanged(address indexed guardian);
 
     modifier onlySelf() {
@@ -57,7 +60,7 @@ contract SmartWallet is IERC165, IERC721Receiver, IERC1155Receiver, IERC1271 {
     ) external {
         require(owner == address(0));
         owner = _owner;
-        emit OwnershipTransferred(address(0), _owner);
+        emit OwnershipTransferred(_owner);
 
         guardian = _guardian;
         emit GuardianChanged(_guardian);
@@ -68,11 +71,15 @@ contract SmartWallet is IERC165, IERC721Receiver, IERC1155Receiver, IERC1271 {
             emit ModuleAdded(_modules[i]);
         }
 
-        emit WalletUpgraded(implementation);
+        emit WalletUpgraded(implementation());
     }
 
-    function version() external pure returns(uint256)  {
+    function version() external pure returns (uint256)  {
         return 1;
+    }
+
+    function implementation() public view returns (address) {
+        return StorageSlot.getAddressSlot(_IMPLEMENTATION_SLOT).value;
     }
 
     function executeFromModule(
@@ -123,13 +130,12 @@ contract SmartWallet is IERC165, IERC721Receiver, IERC1155Receiver, IERC1271 {
 
     function transferOwnership(address newOwner) external onlySelf {
         if (newOwner == address(0)) revert InvalidNewOwner();
-        address oldOwner = owner;
         owner = newOwner;
-        emit OwnershipTransferred(oldOwner, newOwner);
+        emit OwnershipTransferred(newOwner);
     }
 
     function upgrade(address newImplementation) external onlySelf {
-        implementation = newImplementation;
+        StorageSlot.getAddressSlot(_IMPLEMENTATION_SLOT).value = newImplementation;
         emit WalletUpgraded(newImplementation);
     }
 
@@ -163,34 +169,34 @@ contract SmartWallet is IERC165, IERC721Receiver, IERC1155Receiver, IERC1271 {
     }
 
     function onERC721Received(
-        address operator,
+        address,
         address from,
         uint256 tokenId,
         bytes calldata
     ) external override returns (bytes4) {
-        emit ERC721Received(operator, from, tokenId);
+        emit ERC721Received(msg.sender, from, tokenId);
         return this.onERC721Received.selector;
     }
 
     function onERC1155Received(
-        address operator,
+        address,
         address from,
         uint256 id,
         uint256 value,
         bytes calldata
     ) external override returns (bytes4) {
-        emit ERC1155Received(operator, from, id, value);
+        emit ERC1155Received(msg.sender, from, id, value);
         return this.onERC1155Received.selector;
     }
 
     function onERC1155BatchReceived(
-        address operator,
+        address,
         address from,
         uint256[] calldata ids,
         uint256[] calldata values,
         bytes calldata
     ) external override returns (bytes4) {
-        emit ERC1155BatchReceived(operator, from, ids, values);
+        emit ERC1155BatchReceived(msg.sender, from, ids, values);
         return this.onERC1155BatchReceived.selector;
     }
 

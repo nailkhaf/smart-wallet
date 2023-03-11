@@ -1,28 +1,27 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/proxy/Clones.sol";
 import "./SmartWallet.sol";
+import "./ProxyWallet.sol";
 
 contract SmartWalletFactory {
-    using Clones for address;
 
     address implementation;
 
-    event WalletDeployed(address indexed wallet, address indexed deployer, bytes32 indexed salt);
+    event WalletDeployed(address indexed wallet, address indexed deployer, string name);
 
     constructor(address _implementation) {
         implementation = _implementation;
     }
 
     function deployWallet(
-        bytes32 salt,
+        string memory name,
         address owner,
         address guardian,
         address[] calldata modules
     ) external {
-        address wallet = implementation.cloneDeterministic(keccak256(abi.encode(msg.sender, salt)));
-        SmartWallet(payable(wallet)).setup(owner, guardian, modules);
-        emit WalletDeployed(wallet, msg.sender, salt);
+        ProxyWallet wallet = new ProxyWallet{salt: keccak256(abi.encode(msg.sender, keccak256(bytes(name))))}(implementation);
+        SmartWallet(payable(address(wallet))).setup(owner, guardian, modules);
+        emit WalletDeployed(address(wallet), msg.sender, name);
     }
 }
