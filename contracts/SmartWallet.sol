@@ -58,7 +58,7 @@ contract SmartWallet is IERC165, IERC721Receiver, IERC1155Receiver, IERC1271 {
         address _guardian,
         address[] calldata _modules
     ) external {
-        require(owner == address(0));
+        assert(owner == address(0));
         owner = _owner;
         emit OwnershipTransferred(_owner);
 
@@ -175,7 +175,7 @@ contract SmartWallet is IERC165, IERC721Receiver, IERC1155Receiver, IERC1271 {
         bytes calldata
     ) external override returns (bytes4) {
         emit ERC721Received(msg.sender, from, tokenId);
-        return this.onERC721Received.selector;
+        return IERC721Receiver.onERC721Received.selector;
     }
 
     function onERC1155Received(
@@ -186,7 +186,7 @@ contract SmartWallet is IERC165, IERC721Receiver, IERC1155Receiver, IERC1271 {
         bytes calldata
     ) external override returns (bytes4) {
         emit ERC1155Received(msg.sender, from, id, value);
-        return this.onERC1155Received.selector;
+        return IERC1155Receiver.onERC1155Received.selector;
     }
 
     function onERC1155BatchReceived(
@@ -197,7 +197,7 @@ contract SmartWallet is IERC165, IERC721Receiver, IERC1155Receiver, IERC1271 {
         bytes calldata
     ) external override returns (bytes4) {
         emit ERC1155BatchReceived(msg.sender, from, ids, values);
-        return this.onERC1155BatchReceived.selector;
+        return IERC1155Receiver.onERC1155BatchReceived.selector;
     }
 
     function recoverSigner(

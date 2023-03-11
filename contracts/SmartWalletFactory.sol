@@ -6,7 +6,7 @@ import "./ProxyWallet.sol";
 
 contract SmartWalletFactory {
 
-    address implementation;
+    address immutable implementation;
 
     event WalletDeployed(address indexed wallet, address indexed deployer, string name);
 
@@ -20,7 +20,7 @@ contract SmartWalletFactory {
         address guardian,
         address[] calldata modules
     ) external {
-        ProxyWallet wallet = new ProxyWallet{salt: keccak256(abi.encode(msg.sender, keccak256(bytes(name))))}(implementation);
+        ProxyWallet wallet = new ProxyWallet{salt: keccak256(bytes(name))}(implementation);
         SmartWallet(payable(address(wallet))).setup(owner, guardian, modules);
         emit WalletDeployed(address(wallet), msg.sender, name);
     }
