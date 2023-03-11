@@ -52,11 +52,15 @@ contract SmartWallet is IERC165, IERC721Receiver, IERC1155Receiver, IERC1271 {
 
     function setup(
         address _owner,
+        address _guardian,
         address[] calldata _modules
     ) external {
         require(owner == address(0));
         owner = _owner;
         emit OwnershipTransferred(address(0), _owner);
+
+        guardian = _guardian;
+        emit GuardianChanged(_guardian);
 
         uint256 modulesLength = _modules.length;
         for (uint256 i = 0; i < modulesLength; i++) {
@@ -65,6 +69,10 @@ contract SmartWallet is IERC165, IERC721Receiver, IERC1155Receiver, IERC1271 {
         }
 
         emit WalletUpgraded(implementation);
+    }
+
+    function version() external pure returns(uint256)  {
+        return 1;
     }
 
     function executeFromModule(
